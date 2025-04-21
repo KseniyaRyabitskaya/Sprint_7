@@ -1,12 +1,9 @@
-import io.restassured.RestAssured;
-import io.restassured.response.Response;
 import org.example.Order;
-import org.junit.Before;
+import org.example.OrderApi;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.notNullValue;
 
 @RunWith(Parameterized.class)
@@ -76,22 +73,11 @@ public class OrderCreateTest {
         };
     }
 
-    @Before
-    public void setUp() {
-        RestAssured.baseURI = "https://qa-scooter.praktikum-services.ru/";
-    }
-
     @Test
     public void orderCreationTest() {
-        Response response =
-                given()
-                        .header("Content-type", "application/json")
-                        .and()
-                        .body(order)
-                        .when()
-                        .post("/api/v1/orders");
-        response.then().assertThat().body("track", notNullValue())
+        OrderApi.createOrder(order).then().assertThat()
+                .statusCode(201)
                 .and()
-                .statusCode(201);
+                .body("track", notNullValue());
     }
 }

@@ -1,94 +1,81 @@
 import io.qameta.allure.Step;
-import io.restassured.RestAssured;
-import io.restassured.response.Response;
 import org.example.Courier;
+import org.example.CourierLogin;
+import org.example.CourierApi;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.equalTo;
-
 
 public class CourierCreationTest {
     Courier courier;
 
     @Before
     public void setUp() {
-        RestAssured.baseURI = "https://qa-scooter.praktikum-services.ru/";
         courier = new Courier("Ponchic11111", "12345", "Alex");
     }
 
     @Test
-    public void getStatusCodeForCourierCreationTest() {
-        createFirstCourier();
-        createIdenticalCourier();
+    public void createCourierTest() {
+        CourierApi.createCourier(courier).then().assertThat()
+                .statusCode(201)
+                .and()
+                .body("ok", equalTo(true));
+    }
+
+    @Test
+    public void createIdenticalCourierTest() {
+        CourierApi.createCourier(courier);
+        CourierApi.createCourier(courier).then().assertThat()
+                .statusCode(409)
+                .and()
+                .body("message", equalTo("Этот логин уже используется. Попробуйте другой."));
+    }
+
+    @Test
+    public void createCourierWithoutParamsTest() {
         createCourierWithoutPassword();
         createCourierWithoutLogin();
         createCourierWithoutLoginAndPassword();
     }
 
     @Step
-    private void createFirstCourier() {
-        createCourierResponse(courier).then().assertThat().body("ok", equalTo(true))
-                .and()
-                .statusCode(201);
-    }
-
-    @Step
-    private void createIdenticalCourier() {
-        createCourierResponse(courier).then().assertThat().body("message", equalTo("Этот логин уже используется. Попробуйте другой."))
-                .and()
-                .statusCode(409);
-    }
-
-    @Step
     private void createCourierWithoutPassword() {
-        createCourierResponse(new Courier("Ponchic902", "", "Alex")).then().assertThat().body("message", equalTo("Недостаточно данных для создания учетной записи"))
+        CourierApi.createCourier(new Courier("Ponchic902", "", "Alex")).then().assertThat()
+                .statusCode(400)
                 .and()
-                .statusCode(400);
+                .body("message", equalTo("Недостаточно данных для создания учетной записи"));
     }
 
     @Step
     private void createCourierWithoutLogin() {
-        createCourierResponse(new Courier("", "12345", "Alex")).then().assertThat().body("message", equalTo("Недостаточно данных для создания учетной записи"))
+        CourierApi.createCourier(new Courier("", "12345", "Alex")).then().assertThat()
+                .statusCode(400)
                 .and()
-                .statusCode(400);
+                .body("message", equalTo("Недостаточно данных для создания учетной записи"));
     }
 
     @Step
     private void createCourierWithoutLoginAndPassword() {
-        createCourierResponse(new Courier("", "", "")).then().assertThat().body("message", equalTo("Недостаточно данных для создания учетной записи"))
+        CourierApi.createCourier(new Courier("", "", "")).then().assertThat()
+                .statusCode(400)
                 .and()
-                .statusCode(400);
-    }
-
-    private Response createCourierResponse(Courier courier) {
-        return given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(courier)
-                .when()
-                .post("/api/v1/courier");
+                .body("message", equalTo("Недостаточно данных для создания учетной записи"));
     }
 
     @After
     public void deleteCourier() {
-        Integer id =
-                given()
-                        .header("Content-type", "application/json")
-                        .and()
-                        .body(courier)
-                        .when()
-                        .post("/api/v1/courier/login")
-                        .then()
-                        .extract().body().path("id");
+        Integer id = CourierApi.loginCourier(
+                        new CourierLogin(
+                                courier.getLogin(),
+                                courier.getPassword()
+                        )
+                )
 
-        given()
-                .header("Content-type", "application/json")
-                .and()
-                .when()
-                .delete("/api/v1/courier/" + id);
+                .then()
+                .extract().body().path("id");
 
+        CourierApi.deleteCourier(id);
     }
 }
