@@ -2,7 +2,6 @@ import io.qameta.allure.Step;
 import org.example.Courier;
 import org.example.CourierLogin;
 import org.example.CourierApi;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -22,6 +21,7 @@ public class CourierCreationTest {
                 .statusCode(201)
                 .and()
                 .body("ok", equalTo(true));
+        deleteCourier();
     }
 
     @Test
@@ -31,6 +31,7 @@ public class CourierCreationTest {
                 .statusCode(409)
                 .and()
                 .body("message", equalTo("Этот логин уже используется. Попробуйте другой."));
+        deleteCourier();
     }
 
     @Test
@@ -64,8 +65,8 @@ public class CourierCreationTest {
                 .body("message", equalTo("Недостаточно данных для создания учетной записи"));
     }
 
-    @After
-    public void deleteCourier() {
+    @Step
+    private void deleteCourier() {
         Integer id = CourierApi.loginCourier(
                         new CourierLogin(
                                 courier.getLogin(),
@@ -74,7 +75,9 @@ public class CourierCreationTest {
                 )
 
                 .then()
-                .extract().body().path("id");
+                .extract()
+                .body()
+                .path("id");
 
         CourierApi.deleteCourier(id);
     }
