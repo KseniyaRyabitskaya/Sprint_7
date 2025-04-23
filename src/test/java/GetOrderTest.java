@@ -1,3 +1,4 @@
+import io.restassured.response.Response;
 import org.example.OrderApi;
 import org.junit.Test;
 
@@ -7,7 +8,8 @@ public class GetOrderTest {
 
     @Test
     public void getReturnsListOfOrdersTest() {
-        OrderApi.getOrderList().then().assertThat()
+        Response response = OrderApi.getOrderList();
+        response.then().assertThat()
                 .statusCode(200)
                 .and()
                 .body("orders", notNullValue());

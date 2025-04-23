@@ -22,7 +22,7 @@ public class Order {
             String comment,
             String[] color
     ) {
-        this.firstName =firstName;
+        this.firstName = firstName;
         this.lastName = lastName;
         this.address = address;
         this.metroStation = metroStation;

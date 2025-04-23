@@ -1,15 +1,19 @@
+import io.restassured.response.Response;
 import org.example.Order;
 import org.example.OrderApi;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
 
 @RunWith(Parameterized.class)
 public class OrderCreateTest {
 
     Order order;
+    int track;
 
     public OrderCreateTest(Order order) {
         this.order = order;
@@ -75,9 +79,18 @@ public class OrderCreateTest {
 
     @Test
     public void orderCreationTest() {
-        OrderApi.createOrder(order).then().assertThat()
+        Response response = OrderApi.createOrder(order);
+        response.then().assertThat()
                 .statusCode(201)
                 .and()
-                .body("track", notNullValue());
+                .body("track", notNullValue())
+                .extract().response();
+        track = response.path("track");
+    }
+
+    @After
+    public void cancelOrder() {
+        Response response = OrderApi.cancelOrder(track);
+        response.then().assertThat().body("ok", equalTo(true));
     }
 }

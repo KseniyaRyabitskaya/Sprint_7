@@ -1,7 +1,8 @@
-import io.qameta.allure.Step;
+import io.restassured.response.Response;
 import org.example.Courier;
 import org.example.CourierLogin;
 import org.example.CourierApi;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -21,7 +22,6 @@ public class CourierCreationTest {
                 .statusCode(201)
                 .and()
                 .body("ok", equalTo(true));
-        deleteCourier();
     }
 
     @Test
@@ -31,54 +31,52 @@ public class CourierCreationTest {
                 .statusCode(409)
                 .and()
                 .body("message", equalTo("Этот логин уже используется. Попробуйте другой."));
-        deleteCourier();
+    }
+
+
+    @Test
+    public void createCourierWithoutPassword() {
+        Response response = CourierApi.createCourier(new Courier("Ponchic902", "", "Alex"));
+        response.then().assertThat()
+                .statusCode(400)
+                .and()
+                .body("message", equalTo("Недостаточно данных для создания учетной записи"));
+    }
+
+
+    @Test
+    public void createCourierWithoutLogin() {
+        Response response = CourierApi.createCourier(new Courier("", "12345", "Alex"));
+        response.then().assertThat()
+                .statusCode(400)
+                .and()
+                .body("message", equalTo("Недостаточно данных для создания учетной записи"));
     }
 
     @Test
-    public void createCourierWithoutParamsTest() {
-        createCourierWithoutPassword();
-        createCourierWithoutLogin();
-        createCourierWithoutLoginAndPassword();
-    }
-
-    @Step
-    private void createCourierWithoutPassword() {
-        CourierApi.createCourier(new Courier("Ponchic902", "", "Alex")).then().assertThat()
+    public void createCourierWithoutLoginAndPassword() {
+        Response response = CourierApi.createCourier(new Courier("", "", ""));
+        response.then().assertThat()
                 .statusCode(400)
                 .and()
                 .body("message", equalTo("Недостаточно данных для создания учетной записи"));
     }
 
-    @Step
-    private void createCourierWithoutLogin() {
-        CourierApi.createCourier(new Courier("", "12345", "Alex")).then().assertThat()
-                .statusCode(400)
-                .and()
-                .body("message", equalTo("Недостаточно данных для создания учетной записи"));
-    }
-
-    @Step
-    private void createCourierWithoutLoginAndPassword() {
-        CourierApi.createCourier(new Courier("", "", "")).then().assertThat()
-                .statusCode(400)
-                .and()
-                .body("message", equalTo("Недостаточно данных для создания учетной записи"));
-    }
-
-    @Step
-    private void deleteCourier() {
+    @After
+    public void deleteCourier() {
         Integer id = CourierApi.loginCourier(
                         new CourierLogin(
                                 courier.getLogin(),
                                 courier.getPassword()
                         )
                 )
-
                 .then()
                 .extract()
                 .body()
                 .path("id");
 
-        CourierApi.deleteCourier(id);
+        if (id != null) {
+            CourierApi.deleteCourier(id).then().assertThat().body("ok", equalTo(true));
+        }
     }
 }
